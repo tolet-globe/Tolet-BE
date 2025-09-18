@@ -52,6 +52,10 @@ app.use((req, res, next) => {
 //eg.
 //route import
 
+app.get("/", (req, res) => {
+  res.send("API is running....");
+});
+
 //route declaration
 //http://localhost:8000/api/v1/property/add-property
 app.use("/api/v1/property", propertyRouter);
