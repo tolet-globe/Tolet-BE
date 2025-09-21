@@ -2,9 +2,9 @@ const Property = require("../../models/propertyModel.js");
 const User = require("../../models/userModel.js");
 const Review = require("../../models/reviewModel.js");
 const {
-  uploadOnCloudinary,
-  deleteFromCloudinary,
-} = require("../../utils/cloudinary.js");
+  uploadOnS3,
+ deleteFromS3,
+} = require("../../utils/awsS3bucket");
 const { asyncHandler } = require("../../utils/asyncHandler.js");
 const { ApiError } = require("../../utils/ApiError.js");
 const axios = require("axios");
@@ -105,7 +105,7 @@ const addProperty = async (req, res) => {
     if (req.files?.images && req.files.images.length > 0) {
       const imageLocalPaths = req.files.images.map((file) => file.path);
       const uploadPromises = imageLocalPaths.map((path) =>
-        uploadOnCloudinary(path)
+        uploadOnS3(path, "property")
       );
       const imgResults = await Promise.all(uploadPromises);
 
@@ -123,7 +123,7 @@ const addProperty = async (req, res) => {
     if (req.files?.videos && req.files.videos.length > 0) {
       const videoLocalPaths = req.files.videos.map((file) => file.path);
       const uploadVideoPromises = videoLocalPaths.map((path) =>
-        uploadOnCloudinary(path)
+        uploadOnS3(path, "property")
       );
       const videoResults = await Promise.all(uploadVideoPromises);
 
@@ -326,7 +326,7 @@ const updateProperty = async (req, res) => {
 
         // Delete images from Cloudinary
         const deletePromises = removedImageUrls.map((imageUrl) =>
-          deleteFromCloudinary(imageUrl)
+         deleteFromS3(imageUrl)
         );
         await Promise.all(deletePromises);
 
@@ -350,7 +350,7 @@ const updateProperty = async (req, res) => {
 
       const imageLocalPaths = req.files.images.map((file) => file.path);
       const uploadPromises = imageLocalPaths.map((path) =>
-        uploadOnCloudinary(path)
+        uploadOnS3(path, "property")
       );
       const imgResults = await Promise.all(uploadPromises);
 
@@ -373,7 +373,7 @@ const updateProperty = async (req, res) => {
     if (req.files?.videos && req.files.videos.length > 0) {
       const videoLocalPaths = req.files.videos.map((file) => file.path);
       const uploadVideoPromises = videoLocalPaths.map((path) =>
-        uploadOnCloudinary(path)
+        uploadOnS3(path, "property")
       );
       const videoResults = await Promise.all(uploadVideoPromises);
 
@@ -480,7 +480,7 @@ const deleteProperty = async (req, res) => {
 
       try {
         const deleteImagePromises = property.images.map((imageUrl) =>
-          deleteFromCloudinary(imageUrl)
+         deleteFromS3(imageUrl)
         );
         await Promise.all(deleteImagePromises);
         console.log("Images deleted from Cloudinary successfully");
@@ -496,7 +496,7 @@ const deleteProperty = async (req, res) => {
 
       try {
         const deleteVideoPromises = property.videos.map((videoUrl) =>
-          deleteFromCloudinary(videoUrl)
+         deleteFromS3(videoUrl)
         );
         await Promise.all(deleteVideoPromises);
         console.log("Videos deleted from Cloudinary successfully");
