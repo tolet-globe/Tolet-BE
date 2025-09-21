@@ -105,7 +105,7 @@ const addProperty = async (req, res) => {
     if (req.files?.images && req.files.images.length > 0) {
       const imageLocalPaths = req.files.images.map((file) => file.path);
       const uploadPromises = imageLocalPaths.map((path) =>
-        uploadOnS3(path, "property")
+        uploadOnS3(path, "properties")
       );
       const imgResults = await Promise.all(uploadPromises);
 
@@ -123,7 +123,7 @@ const addProperty = async (req, res) => {
     if (req.files?.videos && req.files.videos.length > 0) {
       const videoLocalPaths = req.files.videos.map((file) => file.path);
       const uploadVideoPromises = videoLocalPaths.map((path) =>
-        uploadOnS3(path, "property")
+        uploadOnS3(path, "properties")
       );
       const videoResults = await Promise.all(uploadVideoPromises);
 
@@ -350,7 +350,7 @@ const updateProperty = async (req, res) => {
 
       const imageLocalPaths = req.files.images.map((file) => file.path);
       const uploadPromises = imageLocalPaths.map((path) =>
-        uploadOnS3(path, "property")
+        uploadOnS3(path, "properties")
       );
       const imgResults = await Promise.all(uploadPromises);
 
@@ -373,7 +373,7 @@ const updateProperty = async (req, res) => {
     if (req.files?.videos && req.files.videos.length > 0) {
       const videoLocalPaths = req.files.videos.map((file) => file.path);
       const uploadVideoPromises = videoLocalPaths.map((path) =>
-        uploadOnS3(path, "property")
+        uploadOnS3(path, "properties")
       );
       const videoResults = await Promise.all(uploadVideoPromises);
 

@@ -116,7 +116,7 @@ exports.uploadProfilePicture = async (req, res) => {
     }
 
     // Upload the image to Cloudinary
-    const uploadResult = await uploadOnS3(imageFile.path, "user");
+    const uploadResult = await uploadOnS3(imageFile.path, "users");
 
     if (!uploadResult) {
       return res
