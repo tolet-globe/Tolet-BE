@@ -18,9 +18,6 @@ const cron = require("node-cron");
 const { markPropertyAsRented } = require("./utils/propertyUtils"); // Adjust the path if necessary
 const faqRoutes = require("./routes/FAQroutes.js");
 const pricingRoutes = require("./routes/pricingRoutes.js");
-const multer = require("multer")
-const upload = multer({ dest: "temp/" }); // temporary folder for multer
-const { uploadOnS3 } = require("./utils/awsS3bucket.js");
 const app = express();
 
 app.use(
@@ -68,31 +65,6 @@ app.use("/api/v1/user", userRoutes);
 app.use("/api/v1/reviews", reviewRoutes);
 app.use("/api/v1/faq", faqRoutes);
 app.use("/api/v1/pricing", pricingRoutes);
-
-// Test upload API
-app.post("/upload", upload.single("file"), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ message: "No file uploaded" });
-    }
-
-    // Upload to S3
-    const result = await uploadOnS3(req.file.path, "test-folder/"); // optional folder
-
-    if (!result) {
-      return res.status(500).json({ message: "S3 upload failed" });
-    }
-
-    res.json({
-      message: "File uploaded successfully!",
-      url: result.url,
-      key: result.key,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
 
 
 // error handler middleware
