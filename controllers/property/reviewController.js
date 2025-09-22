@@ -1,6 +1,6 @@
 // const Property = require("../../models/propertyModel.js");
 // const Review = require("../../models/reviewModel.js");
-// const { uploadOnCloudinary } = require("../../utils/cloudinary.js");
+// const { uploadOnS3 } = require("../../utils/awsS3bucket");
 // const { asyncHandler } = require("../../utils/asyncHandler.js");
 // const { ApiError } = require("../../utils/ApiError.js");
 

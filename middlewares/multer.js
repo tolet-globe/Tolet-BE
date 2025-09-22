@@ -1,27 +1,9 @@
 const multer = require("multer");
+const multerS3 = require("multer-s3");
 const path = require("path");
-const fs = require("fs");
-
-// Create the temp directory if it doesn't exist
-const tempDir = path.join(__dirname, '../public/temp');
-if (!fs.existsSync(tempDir)) {
-  fs.mkdirSync(tempDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, tempDir); // Use absolute path
-  },
-  filename: function (req, file, cb) {
-    // Generate unique filename to prevent conflicts
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
-    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
-  },
-});
+const s3 = require("../config/aws.js"); // import S3 config
 
 const fileFilter = (req, file, cb) => {
-  // Validate file types
   const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
@@ -31,11 +13,22 @@ const fileFilter = (req, file, cb) => {
 };
 
 const upload = multer({
-  storage: storage,
+  storage: multerS3({
+    s3: s3,
+    bucket: process.env.AWS_BUCKET_NAME,
+    metadata: function (req, file, cb) {
+      cb(null, { fieldName: file.fieldname });
+    },
+    key: function (req, file, cb) {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const ext = path.extname(file.originalname);
+      cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+    },
+  }),
   fileFilter: fileFilter,
   limits: { 
-    fileSize: 10 * 1024 * 1024, // 10MB file size limit
-    files: 15 // Limit to 15 files
+    fileSize: 10 * 1024 * 1024, // 10MB
+    files: 15
   }
 });
 

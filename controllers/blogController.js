@@ -1,5 +1,5 @@
 const Blog = require("../models/blogModel.js");
-const { uploadOnCloudinary } = require("../utils/cloudinary.js");
+const { uploadOnS3 } = require("../utils/awsS3bucket.js");
 const upload = require("../middlewares/multer.js");
 const { asyncHandler } = require("../utils/asyncHandler");
 const { ApiError } = require("../utils/ApiError.js");

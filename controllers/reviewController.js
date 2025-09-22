@@ -1,7 +1,7 @@
 const Review = require("../models/reviewModel");
 const Property = require("../models/propertyModel"); // Add this at the top
 
-// const { uploadOnCloudinary } = require("../utils/cloudinary");
+// const { uploadOnS3 } = require("../utils/cloudinary");
 // const multer = require("multer");
 // const storage = multer.memoryStorage();
 // const upload = multer({ storage });
