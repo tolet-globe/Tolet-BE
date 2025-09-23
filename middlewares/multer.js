@@ -1,7 +1,17 @@
+// config/multer.js
 const multer = require("multer");
-const multerS3 = require("multer-s3");
 const path = require("path");
-const s3 = require("../config/aws.js"); // import S3 config
+
+// Use memory storage instead of S3 streaming
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, './uploads/'); // Make sure this directory exists
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
 
 const fileFilter = (req, file, cb) => {
   const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
@@ -13,18 +23,7 @@ const fileFilter = (req, file, cb) => {
 };
 
 const upload = multer({
-  storage: multerS3({
-    s3: s3,
-    bucket: process.env.AWS_BUCKET_NAME,
-    metadata: function (req, file, cb) {
-      cb(null, { fieldName: file.fieldname });
-    },
-    key: function (req, file, cb) {
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      const ext = path.extname(file.originalname);
-      cb(null, file.fieldname + '-' + uniqueSuffix + ext);
-    },
-  }),
+  storage: storage, // Use memory storage
   fileFilter: fileFilter,
   limits: { 
     fileSize: 10 * 1024 * 1024, // 10MB
