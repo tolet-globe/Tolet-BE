@@ -8,7 +8,7 @@ const {
 const { asyncHandler } = require("../../utils/asyncHandler.js");
 const { ApiError } = require("../../utils/ApiError.js");
 const axios = require("axios");
-
+const fs = require("fs")
 // Import pincode data and define getPincode function
 const pincodeData = require("../../data.json");
 
@@ -42,20 +42,14 @@ const addProperty = async (req, res) => {
       floor,
       nearestLandmark,
       typeOfWashroom,
-      // coolingFacility,
-      // carParking,
       coupon,
       rent,
       security,
       minRent,
       maxRent,
-      images,
-      videos, //adding videos
       squareFeetArea,
-      // locationLink,
       appliances,
       amenities,
-      // addressVerification,
       availabilityStatus,
       aboutTheProperty,
       latitude,
@@ -64,7 +58,8 @@ const addProperty = async (req, res) => {
       couponStatus,
     } = req.body;
 
-    console.log("Recieved Data:", req.body);
+    console.log("Received Data:", req.body);
+    console.log("Files received:", req.files);
 
     const resolvedPincode = pincode || getPincode(city, locality);
 
@@ -73,17 +68,6 @@ const addProperty = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found." });
     }
-
-    // Bypass coupon validation if user is admin or intermidiate
-    // if (user.role !== "admin" || user.role !== "intermidiate") {
-    //   if ((couponStatus === "true" || couponStatus === true) && coupon) {
-    //     user.coupons.set(coupon, true);
-    //   } else {
-    //     return res
-    //       .status(400)
-    //       .json({ message: "Coupon not found. Enter the correct coupon" });
-    //   }
-    // }
 
     if (!resolvedPincode) {
       return res
@@ -98,44 +82,128 @@ const addProperty = async (req, res) => {
       ? "NA"
       : Number(squareFeetArea);
 
-    let imageUrls;
-    let videoUrls;
+    let imageUrls = [];
+    let videoUrls = [];
 
     // Upload images if present
-    if (req.files?.images && req.files.images.length > 0) {
-      const imageLocalPaths = req.files.images.map((file) => file.path);
-      const uploadPromises = imageLocalPaths.map((path) =>
-        uploadOnS3(path, "properties")
-      );
-      const imgResults = await Promise.all(uploadPromises);
+    if (req.files && req.files.images && req.files.images.length > 0) {
+      console.log("Uploading images to S3...");
+      
+      const uploadPromises = req.files.images.map(async (file) => {
+        try {
+          if (file.path) {
+            console.log(`Uploading file from path: ${file.path}`);
+            return await uploadOnS3(file.path, "properties");
+          } else if (file.buffer) {
+            console.log("Creating temporary file from buffer...");
+            const tempDir = './temp_uploads';
+            if (!fs.existsSync(tempDir)) {
+              fs.mkdirSync(tempDir, { recursive: true });
+            }
+            
+            const tempFilePath = path.join(tempDir, `img-${Date.now()}-${file.originalname}`);
+            fs.writeFileSync(tempFilePath, file.buffer);
+            
+            const result = await uploadOnS3(tempFilePath, "properties");
+            
+            if (fs.existsSync(tempFilePath)) {
+              fs.unlinkSync(tempFilePath);
+            }
+            
+            return result;
+          } else {
+            console.error("File has neither path nor buffer:", file);
+            return null;
+          }
+        } catch (error) {
+          console.error("Error uploading image:", error);
+          return null;
+        }
+      });
 
+      const imgResults = await Promise.all(uploadPromises);
       const failedUploads = imgResults.filter((result) => !result);
+      
       if (failedUploads.length > 0) {
-        return res
-          .status(400)
-          .json({ message: "Failed to upload some images" });
+        console.error(`Failed to upload ${failedUploads.length} images`);
+        return res.status(400).json({ message: "Failed to upload some images" });
       }
 
-      imageUrls = imgResults.map((result) => result.url);
+      imageUrls = imgResults.map((result) => result?.url).filter(url => url);
+      console.log(`Successfully uploaded ${imageUrls.length} images`);
     }
 
     // Upload videos if present
-    if (req.files?.videos && req.files.videos.length > 0) {
-      const videoLocalPaths = req.files.videos.map((file) => file.path);
-      const uploadVideoPromises = videoLocalPaths.map((path) =>
-        uploadOnS3(path, "properties")
-      );
-      const videoResults = await Promise.all(uploadVideoPromises);
+    if (req.files && req.files.videos && req.files.videos.length > 0) {
+      console.log("Uploading videos to S3...");
+      
+      const uploadVideoPromises = req.files.videos.map(async (file) => {
+        try {
+          if (file.path) {
+            return await uploadOnS3(file.path, "properties");
+          } else if (file.buffer) {
+            const tempDir = './temp_uploads';
+            if (!fs.existsSync(tempDir)) {
+              fs.mkdirSync(tempDir, { recursive: true });
+            }
+            
+            const tempFilePath = path.join(tempDir, `vid-${Date.now()}-${file.originalname}`);
+            fs.writeFileSync(tempFilePath, file.buffer);
+            
+            const result = await uploadOnS3(tempFilePath, "properties");
+            
+            if (fs.existsSync(tempFilePath)) {
+              fs.unlinkSync(tempFilePath);
+            }
+            
+            return result;
+          } else {
+            return null;
+          }
+        } catch (error) {
+          console.error("Error uploading video:", error);
+          return null;
+        }
+      });
 
+      const videoResults = await Promise.all(uploadVideoPromises);
       const failedVideoUploads = videoResults.filter((result) => !result);
+      
       if (failedVideoUploads.length > 0) {
-        return res
-          .status(400)
-          .json({ message: "Failed to upload some videos" });
+        return res.status(400).json({ message: "Failed to upload some videos" });
       }
 
-      videoUrls = videoResults.map((result) => result.url);
+      videoUrls = videoResults.map((result) => result?.url).filter(url => url);
     }
+
+    // FIXED: Parse array fields safely
+    const parseField = (field) => {
+      if (!field) return [];
+      
+      if (typeof field === 'string') {
+        try {
+          // Try to parse as JSON first
+          const parsed = JSON.parse(field);
+          return Array.isArray(parsed) ? parsed : [field];
+        } catch (error) {
+          // If it's not valid JSON, treat it as a single value and convert to array
+          return [field];
+        }
+      }
+      
+      if (Array.isArray(field)) {
+        return field;
+      }
+      
+      return [field];
+    };
+
+    const parsedAppliances = parseField(appliances);
+    const parsedAmenities = parseField(amenities);
+
+    console.log("Parsed appliances:", parsedAppliances);
+    console.log("Parsed amenities:", parsedAmenities);
+
     // Create property data object
     const data = {
       userId,
@@ -151,7 +219,6 @@ const addProperty = async (req, res) => {
       address,
       spaceType,
       propertyType,
-      // petsAllowed,
       preference,
       bachelors,
       type,
@@ -159,37 +226,35 @@ const addProperty = async (req, res) => {
       floor,
       nearestLandmark,
       typeOfWashroom,
-      // coolingFacility,
-      // carParking,
       coupon,
       minRent,
       maxRent,
       rent: formattedRent,
       security: formattedSecurity,
-      images: imageUrls, // Changed photos to
-      videos: videoUrls, // adding videos
+      images: imageUrls,
+      videos: videoUrls,
       squareFeetArea: formattedSquareFeetArea,
-      // locationLink,
-      appliances,
-      amenities,
-      // addressVerification,
+      appliances: parsedAppliances,
+      amenities: parsedAmenities,
       availabilityStatus,
       aboutTheProperty,
-      latitude,
-      longitude,
+      latitude: latitude || null,
+      longitude: longitude || null,
       subscriptionPlan: Number(subscriptionPlan) || 0,
     };
+
+    console.log("Final data with images:", data.images);
+    console.log("Final data with appliances:", data.appliances);
+    console.log("Final data with amenities:", data.amenities);
 
     // Save property to the database
     const property = await Property.create(data);
 
     if (!property) {
-      return res
-        .status(500)
-        .json({ message: "Something went wrong while creating property" });
+      return res.status(500).json({ message: "Something went wrong while creating property" });
     }
 
-    // saving to google sheets
+    // Save to google sheets
     const sheetPayload = {
       userId,
       firstName,
@@ -206,16 +271,20 @@ const addProperty = async (req, res) => {
       ownersContactNumber,
       pincode: resolvedPincode,
       spaceType,
-      latitude,
-      longitude,
-      coupon,
-      subscriptionPlan,
-      ownerLocation,
+      latitude: latitude || '',
+      longitude: longitude || '',
+      coupon: coupon || '',
+      subscriptionPlan: Number(subscriptionPlan) || 0,
+      ownerLocation: ownerLocation || '',
     };
 
     try {
-      // Convert the payload to URL parameters for Google Apps Script
-      const params = new URLSearchParams(sheetPayload);
+      const params = new URLSearchParams();
+      Object.entries(sheetPayload).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params.append(key, value.toString());
+        }
+      });
 
       const response = await axios.post(
         process.env.ADDPROPPERTY_SHEET_URL,
@@ -226,27 +295,21 @@ const addProperty = async (req, res) => {
           },
         }
       );
-      const resultText = response.data; // Use response.data instead of response.text()
-      console.log("Google Sheet log:", resultText);
+      console.log("Google Sheet log:", response.data);
     } catch (sheetErr) {
       console.error("Sheet logging failed:", sheetErr.message);
     }
 
-    if (!property) {
-      return res
-        .status(500)
-        .json({ message: "Something went wrong while creating property" });
-    }
-
-    await user.save(); // saving the coupon
+    await user.save();
     await property.save();
+    
     return res.status(201).json({
       statusCode: 201,
       property,
       msg: "Property registered successfully.",
     });
   } catch (error) {
-    console.log(error);
+    console.error("Error in addProperty:", error);
     return res.status(500).json({ message: error.message });
   }
 };
@@ -350,6 +413,7 @@ const updateProperty = async (req, res) => {
 
       const imageLocalPaths = req.files.images.map((file) => file.path);
       const uploadPromises = imageLocalPaths.map((path) =>
+        
         uploadOnS3(path, "properties")
       );
       const imgResults = await Promise.all(uploadPromises);
