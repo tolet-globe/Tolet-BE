@@ -143,3 +143,7 @@ dist
 
 # End of https://www.toptal.com/developers/gitignore/api/node
 .vercel
+
+properties.csv
+propertiesWithOwnerLoc.csv
+property.csv

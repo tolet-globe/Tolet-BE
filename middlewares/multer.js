@@ -1,27 +1,19 @@
+// config/multer.js
 const multer = require("multer");
 const path = require("path");
-const fs = require("fs");
 
-// Create the temp directory if it doesn't exist
-const tempDir = path.join(__dirname, '../public/temp');
-if (!fs.existsSync(tempDir)) {
-  fs.mkdirSync(tempDir, { recursive: true });
-}
-
+// Use memory storage instead of S3 streaming
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, tempDir); // Use absolute path
+    cb(null, './uploads/'); // Make sure this directory exists
   },
   filename: function (req, file, cb) {
-    // Generate unique filename to prevent conflicts
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
-    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
-  },
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
 });
 
 const fileFilter = (req, file, cb) => {
-  // Validate file types
   const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
@@ -31,11 +23,11 @@ const fileFilter = (req, file, cb) => {
 };
 
 const upload = multer({
-  storage: storage,
+  storage: storage, // Use memory storage
   fileFilter: fileFilter,
   limits: { 
-    fileSize: 10 * 1024 * 1024, // 10MB file size limit
-    files: 15 // Limit to 15 files
+    fileSize: 10 * 1024 * 1024, // 10MB
+    files: 15
   }
 });
 

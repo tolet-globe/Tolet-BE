@@ -1,7 +1,7 @@
 const { jwtDecode } = require("jwt-decode");
 const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
-const { uploadOnCloudinary } = require("../utils/cloudinary.js");
+const { uploadOnS3 } = require("../utils/awsS3bucket");
 const Property = require("../models/propertyModel");
 
 exports.getUserInfo = async (req, res) => {
@@ -116,7 +116,7 @@ exports.uploadProfilePicture = async (req, res) => {
     }
 
     // Upload the image to Cloudinary
-    const uploadResult = await uploadOnCloudinary(imageFile.path);
+    const uploadResult = await uploadOnS3(imageFile.path, "users");
 
     if (!uploadResult) {
       return res

@@ -18,7 +18,6 @@ const cron = require("node-cron");
 const { markPropertyAsRented } = require("./utils/propertyUtils"); // Adjust the path if necessary
 const faqRoutes = require("./routes/FAQroutes.js");
 const pricingRoutes = require("./routes/pricingRoutes.js");
-
 const app = express();
 
 app.use(
@@ -37,9 +36,9 @@ app.use(
   })
 );
 
-app.use(express.json({ limit: "20kb" }));
+app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
-app.use(express.urlencoded({ extended: true, limit: "16kb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(express.json()); // ← Ensure this is present to parse JSON bodies
 
 app.use(helmet());
@@ -66,6 +65,7 @@ app.use("/api/v1/user", userRoutes);
 app.use("/api/v1/reviews", reviewRoutes);
 app.use("/api/v1/faq", faqRoutes);
 app.use("/api/v1/pricing", pricingRoutes);
+
 
 // error handler middleware
 app.use(errorHandler);
