@@ -31,11 +31,11 @@ router.route("/add-property").post(
   upload.fields([
     {
       name: "images",
-      maxCount: 10, // max count
+      maxCount: 15, // max 15 images
     },
     {
       name: "videos",
-      maxCount: 5, // max count
+      maxCount: 5, // max 5 videos
     },
   ]),
   addProperty
@@ -55,8 +55,8 @@ router.get("/status", getPropertiesByStatus);
 
 router.route("/update-property/:id").patch(
   upload.fields([
-    { name: "images", maxCount: 7 }, // Adjust the maxCount as needed
-    { name: "videos", maxCount: 7 }, // Optional, if you're uploading videos
+    { name: "images", maxCount: 15 }, // max 15 images
+    { name: "videos", maxCount: 5 }, // max 5 videos
   ]),
   updateProperty
 );
