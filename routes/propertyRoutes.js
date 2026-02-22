@@ -14,6 +14,7 @@ const {
   getPropertyByArea,
   updatePropertyAvailabilityStatus,
   purchaseQuery,
+  getAllProperties,
 } = require("../controllers/property/index.js");
 
 const upload = require("../middlewares/multer.js");
@@ -38,7 +39,7 @@ router.route("/add-property").post(
       maxCount: 5, // max 5 videos
     },
   ]),
-  addProperty
+  addProperty,
 ); //change names and methods according to your endpoints
 //eg.
 
@@ -50,6 +51,8 @@ router.route("/filter").get(getFilteredProperties);
 
 router.get("/status", getPropertiesByStatus);
 
+router.get("/all", getAllProperties);
+
 // http://localhost:8000/api/v1/property?page=2&limit=5
 // router.route("/").get(GetProperty); //change names and methods according to your endpoints
 
@@ -58,7 +61,7 @@ router.route("/update-property/:id").patch(
     { name: "images", maxCount: 15 }, // max 15 images
     { name: "videos", maxCount: 5 }, // max 5 videos
   ]),
-  updateProperty
+  updateProperty,
 );
 // router.route("/update-property/:id").patch(updateProperty); //change names and methods according to your endpoints
 router
@@ -129,7 +132,7 @@ router.put("/:id/availability", async (req, res) => {
     const updatedProperty = await Property.findByIdAndUpdate(
       req.params.id,
       { availabilityStatus: req.body.availabilityStatus },
-      { new: true, runValidators: false } // new: true returns the updated document, runValidators: false skips validation
+      { new: true, runValidators: false }, // new: true returns the updated document, runValidators: false skips validation
     );
 
     if (!updatedProperty) {

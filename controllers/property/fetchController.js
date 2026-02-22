@@ -1,5 +1,6 @@
 const Property = require("../../models/propertyModel.js");
 const Review = require("../../models/reviewModel.js");
+const User = require("../../models/userModel.js");
 const { uploadOnS3 } = require("../../utils/awsS3bucket");
 const { asyncHandler } = require("../../utils/asyncHandler.js");
 const { ApiError } = require("../../utils/ApiError.js");
@@ -61,6 +62,7 @@ const getFilteredProperties = async (req, res) => {
       area,
       page = 1,
       limit = 9,
+      ownerLocation,
     } = req.query;
 
     const filter = {};
@@ -115,6 +117,16 @@ const getFilteredProperties = async (req, res) => {
     if (houseType) {
       const houseTypes = houseType.split(",");
       filter.type = { $in: houseTypes };
+    }
+
+    if (ownerLocation) {
+      if (ownerLocation === "Lives in different property") {
+        filter.ownerLocation = {
+          $in: ["Lives in different property", "Lives in different city"],
+        };
+      } else {
+        filter.ownerLocation = ownerLocation;
+      }
     }
 
     // Enhanced area and locality handling
@@ -179,7 +191,7 @@ const getFilteredProperties = async (req, res) => {
       properties,
       searchedLocality,
       searchedAreas,
-      cityName
+      cityName,
     ) => {
       return properties.sort((a, b) => {
         let aPriority = 0;
@@ -237,13 +249,13 @@ const getFilteredProperties = async (req, res) => {
               searchCenter.lat,
               searchCenter.lng,
               aLat,
-              aLng
+              aLng,
             );
             const distanceB = calculateDistance(
               searchCenter.lat,
               searchCenter.lng,
               bLat,
-              bLng
+              bLng,
             );
 
             // Closer properties get higher priority (inverse relationship)
@@ -306,7 +318,7 @@ const getFilteredProperties = async (req, res) => {
       allProperties,
       locality,
       searchedAreas,
-      city
+      city,
     );
 
     // Pagination
@@ -391,10 +403,31 @@ const getFilteredProperties = async (req, res) => {
 const getPropertiesByUserId = async (req, res) => {
   try {
     const userId = req.params.userId;
-    const properties = await Property.find({ userId: userId });
+    const properties = await Property.find({ userId: userId }).sort({
+      createdAt: -1,
+    });
+
     return res.status(200).json(properties);
   } catch (error) {
     return res.status(500).json({ message: error.message });
+  }
+};
+
+const getAllProperties = async (req, res) => {
+  try {
+    const properties = await Property.find({}).sort({ createdAt: -1 });
+
+    // Assuming frontend expects { data: [properties] } like status filter
+    return res.status(200).json({
+      success: true,
+      data: properties,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message,
+    });
   }
 };
 
@@ -460,4 +493,5 @@ module.exports = {
   getFilteredProperties,
   getPropertiesByStatus,
   getPropertiesByUserId,
+  getAllProperties,
 };
