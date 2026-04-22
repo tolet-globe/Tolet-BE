@@ -262,19 +262,19 @@ const getFilteredProperties = async (req, res) => {
             // Properties within 5km get bonus priority
             if (distanceA <= 2) aPriority += Math.floor((2 - distanceA) * 100);
             if (distanceB <= 2) bPriority += Math.floor((2 - distanceB) * 100);
+
+            // Add medium distance priority
+            if (distanceA > 2 && distanceA <= 5)
+              aPriority += Math.floor((5 - distanceA) * 50);
+            if (distanceB > 2 && distanceB <= 5)
+              bPriority += Math.floor((5 - distanceB) * 50);
+
+            // Add far distance priority
+            if (distanceA > 5 && distanceA <= 10)
+              aPriority += Math.floor((10 - distanceA) * 20);
+            if (distanceB > 5 && distanceB <= 10)
+              bPriority += Math.floor((10 - distanceB) * 20);
           }
-
-          // Add medium distance priority
-          if (distanceA > 2 && distanceA <= 5)
-            aPriority += Math.floor((5 - distanceA) * 50);
-          if (distanceB > 2 && distanceB <= 5)
-            bPriority += Math.floor((5 - distanceB) * 50);
-
-          // Add far distance priority
-          if (distanceA > 5 && distanceA <= 10)
-            aPriority += Math.floor((10 - distanceA) * 20);
-          if (distanceB > 5 && distanceB <= 10)
-            bPriority += Math.floor((10 - distanceB) * 20);
         }
 
         // 5. Address-based Area/Locality Match (fallback)
