@@ -202,12 +202,12 @@ const getFilteredProperties = async (req, res) => {
           a.availabilityStatus === "Available" &&
           b.availabilityStatus !== "Available"
         ) {
-          aPriority += 1000;
+          aPriority += 10000; // Increased from 1000
         } else if (
           a.availabilityStatus !== "Available" &&
           b.availabilityStatus === "Available"
         ) {
-          bPriority += 1000;
+          bPriority += 10000; // Increased from 1000
         }
 
         // 2. Exact Area Match Priority (highest)
@@ -404,6 +404,7 @@ const getPropertiesByUserId = async (req, res) => {
   try {
     const userId = req.params.userId;
     const properties = await Property.find({ userId: userId }).sort({
+      availabilityStatus: 1,
       createdAt: -1,
     });
 
@@ -415,7 +416,10 @@ const getPropertiesByUserId = async (req, res) => {
 
 const getAllProperties = async (req, res) => {
   try {
-    const properties = await Property.find({}).sort({ createdAt: -1 });
+    const properties = await Property.find({}).sort({
+      availabilityStatus: 1,
+      createdAt: -1,
+    });
 
     // Assuming frontend expects { data: [properties] } like status filter
     return res.status(200).json({

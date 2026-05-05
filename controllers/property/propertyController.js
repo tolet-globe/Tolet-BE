@@ -330,16 +330,38 @@ const updateProperty = async (req, res) => {
       return res.status(404).json({ message: "Property not found" });
     }
 
-    // Find the user associated with this property
-    const user = await User.findById(property.userId);
-    if (!user) {
+    // Find the user associated with this property (owner)
+    const owner = await User.findById(property.userId);
+    if (!owner) {
       return res
         .status(404)
         .json({ message: "User associated with this property not found" });
     }
 
+    // Authorization check: Admin can update any property, others only their own
+    const requestingUserId = req.userId || req.body.userId;
+    if (!requestingUserId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    const requestingUser = await User.findById(requestingUserId);
+    if (!requestingUser) {
+      return res.status(404).json({ message: "Requesting user not found" });
+    }
+
+    if (
+      requestingUser.role !== "admin" &&
+      property.userId.toString() !== requestingUserId.toString()
+    ) {
+      return res.status(403).json({
+        message:
+          "Unauthorized! Only admin or property owner can update this property.",
+      });
+    }
+
     // Get the fields from the update form
     const {
+      userId, // This is the userId from the body, which might be the requesting user or property owner
       firstName,
       lastName,
       ownersContactNumber,
@@ -521,21 +543,25 @@ const deleteProperty = async (req, res) => {
       return res.status(404).json({ message: "Property not found" });
     }
 
-    // Check if the authenticated user is the owner of the property
-    const user = await User.findById(property.userId);
-    if (!user) {
-      return res
-        .status(404)
-        .json({ message: "User associated with this property not found" });
+    // Authorization check: Admin can delete any property, others only their own
+    const requestingUserId = req.userId || req.body.userId;
+    if (!requestingUserId) {
+      return res.status(401).json({ message: "Authentication required" });
     }
 
-    // Check if the user is authorized to delete this property
-    // Assuming user ID is available in req.user from the middleware
-    const userId = user._id;
-    if (property.userId.toString() !== userId.toString()) {
-      return res
-        .status(403)
-        .json({ message: "Unauthorized: You do not own this property" });
+    const requestingUser = await User.findById(requestingUserId);
+    if (!requestingUser) {
+      return res.status(404).json({ message: "Requesting user not found" });
+    }
+
+    if (
+      requestingUser.role !== "admin" &&
+      property.userId.toString() !== requestingUserId.toString()
+    ) {
+      return res.status(403).json({
+        message:
+          "Unauthorized! Only admin or property owner can delete this property.",
+      });
     }
 
     // Delete images from Cloudinary if they exist
@@ -585,7 +611,8 @@ const deleteProperty = async (req, res) => {
 const updatePropertyAvailabilityStatus = async (req, res) => {
   try {
     const { id: propertyId } = req.params;
-    const { userId, availabilityStatus } = req.body;
+    const { availabilityStatus } = req.body;
+    const userId = req.userId || req.body.userId;
 
     if (!propertyId) {
       return res.status(400).json({ message: "Property ID is required" });
