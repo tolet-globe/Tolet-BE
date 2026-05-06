@@ -19,6 +19,7 @@ const {
 
 const upload = require("../middlewares/multer.js");
 const Property = require("../models/propertyModel.js");
+const User = require("../models/userModel.js");
 const authenticate = require("../middlewares/authMiddleware.js");
 //const { BASE_URL } = require("../../Tolet-Globe-Frontend/src/constant/constant.js");
 // import("../../Tolet-Globe-Frontend/src/constant/constant.js").then(({ BASE_URL }) => {
