@@ -12,8 +12,8 @@ const errorHandler = function (err, req, res, _) {
   }
 
   // If it's any other 413 error (like from body-parser)
-  if (statusCode === 413) {
-    message = "image file size exceeded";
+  if (statusCode === 413 && !message) {
+    message = "Request entity too large";
   }
 
   // Log the error for debugging
