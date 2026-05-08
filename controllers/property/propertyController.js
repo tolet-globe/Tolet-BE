@@ -330,14 +330,6 @@ const updateProperty = async (req, res) => {
       return res.status(404).json({ message: "Property not found" });
     }
 
-    // Find the user associated with this property (owner)
-    const owner = await User.findById(property.userId);
-    if (!owner) {
-      return res
-        .status(404)
-        .json({ message: "User associated with this property not found" });
-    }
-
     // Authorization check: Admin can update any property, others only their own
     const requestingUserId = req.userId || req.body.userId;
     if (!requestingUserId) {
@@ -349,6 +341,7 @@ const updateProperty = async (req, res) => {
       return res.status(404).json({ message: "Requesting user not found" });
     }
 
+    // Check authorization: Admin or Owner
     if (
       requestingUser.role !== "admin" &&
       property.userId.toString() !== requestingUserId.toString()
@@ -357,6 +350,15 @@ const updateProperty = async (req, res) => {
         message:
           "Unauthorized! Only admin or property owner can update this property.",
       });
+    }
+
+    // Optional check: Find the user associated with this property (owner)
+    // Only block if not admin and owner doesn't exist (though the check above already handles ownership)
+    const owner = await User.findById(property.userId);
+    if (!owner && requestingUser.role !== "admin") {
+      return res
+        .status(404)
+        .json({ message: "User associated with this property not found" });
     }
 
     // Get the fields from the update form
